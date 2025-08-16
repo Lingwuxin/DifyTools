@@ -1,0 +1,6 @@
+[project]
+name="DifyTools"
+version="0.0.1"
+dependencies = [
+    "requests>=2.25.1"
+]

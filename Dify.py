@@ -1,6 +1,5 @@
 import requests
 import json
-import pandas as pd
 import logging
 from typing import List, Dict, Any, Optional
 from requests.exceptions import RequestException
