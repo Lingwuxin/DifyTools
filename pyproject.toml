@@ -1,6 +1,8 @@
 [project]
-name="DifyTools"
-version="0.0.1"
+name = "DifyTools"
+version = "0.0.1"
+description = "DifyTools: 包含 Dify 和 Ragflow 工具"
+license = "MIT"
 dependencies = [
     "requests>=2.25.1"
 ]
