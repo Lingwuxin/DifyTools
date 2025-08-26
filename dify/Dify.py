@@ -209,27 +209,20 @@ class Dify:
         result_text = ""
         final_outputs = None
         run_id = None
-        self.logger.info("开始处理流式响应...")
+        self.logger.info("等待工作流执行...")
         if response_mode == "blocking":
             # blocking模式直接获取完整响应
             try:
                 resp_json = response.json()
-                outputs = resp_json.get("outputs", {})
-                result_text = outputs.get("text", "")
-                run_id = resp_json.get("workflow_run_id")
-                final_outputs = outputs
                 self.logger.info("工作流执行完成(blocking)")
                 return {
-                    "status": "success",
-                    "result": result_text,
-                    "outputs": final_outputs,
-                    "run_id": run_id,
                     "raw": resp_json
                 }
             except Exception as e:
                 self.logger.error(f"blocking模式解析失败: {e}")
                 return {"status": "error", "message": str(e)}
         else:
+            self.logger.info("开始处理流式响应...")
             # streaming模式
             for line in response.iter_lines(decode_unicode=True):
                 if not line:
@@ -250,25 +243,15 @@ class Dify:
                     # 处理最终结果
                     elif json_data.get("event") == "workflow_finished":
                         outputs = json_data.get("data", {}).get("outputs", {})
-                        result_text = outputs.get("text", "")
-                        run_id = json_data.get("workflow_run_id")
-                        final_outputs = outputs
                         self.logger.info("工作流执行完成(streaming)")
                         return {
-                            "status": "success",
-                            "result": result_text,
-                            "outputs": final_outputs,
-                            "run_id": run_id,
                             "raw": json_data
                         }
                     # 显示文本输出
                     if "text" in json_data.get("data", {}):
                         print(json_data["data"]["text"], end="", flush=True)
             return {
-                "status": "success",
-                "result": result_text,
-                "outputs": final_outputs,
-                "run_id": run_id
+                "status": "failed",
             }
 if __name__ == "__main__":
     # 示例用法
