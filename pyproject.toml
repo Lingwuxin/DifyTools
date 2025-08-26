@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "difytools"
-version = "0.0.2"
+version = "0.0.3"
 description = "DifyTools: 包含 Dify 和 Ragflow 工具"
 readme = {file = "README.md", content-type = "text/markdown"}
 license = "MIT"
