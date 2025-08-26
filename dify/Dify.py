@@ -73,6 +73,8 @@ class Dify:
         except Exception as e:
             self.logger.exception("上传文件时发生未预期异常")
             return None
+    def run_agent(self):
+        pass
     def run_chatflow(
         self,
         response_mode: str = "streaming",
