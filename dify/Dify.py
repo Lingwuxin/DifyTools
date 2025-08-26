@@ -108,8 +108,6 @@ class Dify:
 
         result_text = ""
         self.logger.info("开始处理流式响应...")
-        message_id = None
-        conversation_id = None
         files = []
         for line in response.iter_lines(decode_unicode=True):
             if not line:
@@ -127,8 +125,6 @@ class Dify:
                     answer = json_data.get("answer", "")
                     result_text += answer
                     print(answer, end="", flush=True)
-                    message_id = json_data.get("message_id")
-                    conversation_id = json_data.get("conversation_id")
                 # 处理文件块
                 elif event == "message_file":
                     files.append({
@@ -205,11 +201,6 @@ class Dify:
                 response.text
             )
             return {"status": "error", "message": response.text}
-
-        result_text = ""
-        final_outputs = None
-        run_id = None
-        self.logger.info("等待工作流执行...")
         if response_mode == "blocking":
             # blocking模式直接获取完整响应
             try:
@@ -242,7 +233,6 @@ class Dify:
                         )
                     # 处理最终结果
                     elif json_data.get("event") == "workflow_finished":
-                        outputs = json_data.get("data", {}).get("outputs", {})
                         self.logger.info("工作流执行完成(streaming)")
                         return {
                             "raw": json_data
