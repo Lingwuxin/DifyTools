@@ -3,8 +3,8 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "DifyTools"
-version = "0.0.1"
+name = "difytools"
+version = "0.0.2"
 description = "DifyTools: 包含 Dify 和 Ragflow 工具"
 readme = {file = "README.md", content-type = "text/markdown"}
 license = "MIT"

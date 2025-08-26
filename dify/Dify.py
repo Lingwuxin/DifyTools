@@ -174,24 +174,21 @@ class Dify:
 
     def run_workflow(
         self,
-        file_id: str,
-        response_mode: str = "streaming"
+        files: Optional[Any] = None,
+        response_mode: str = "streaming",
+        **args
     ) -> Dict[str, Any]:
-        """运行工作流"""
+        """运行工作流，支持自定义inputs参数"""
         workflow_url = f"{self.base_url}/workflows/run"
+        inputs = dict(args) if args else {}
+        if files is not None:
+            inputs["files"] = files
         data = {
-            "inputs": {
-                "files": {
-                    "type": "document",
-                    "transfer_method": "local_file",
-                    "upload_file_id": file_id
-                }
-            },
+            "inputs": inputs,
             "response_mode": response_mode,
             "user": "user"
         }
-        self.logger.info("开始运行工作流，文件ID: %s", file_id)
-        
+        self.logger.info("开始运行工作流，inputs: %s", inputs)
         stream_mode = (response_mode == "streaming")
         response = requests.post(
             workflow_url,
@@ -210,49 +207,76 @@ class Dify:
             return {"status": "error", "message": response.text}
 
         result_text = ""
+        final_outputs = None
+        run_id = None
         self.logger.info("开始处理流式响应...")
-        
-        for line in response.iter_lines(decode_unicode=True):
-            if not line:
-                continue
-            if line.startswith("data: "):
-                json_str = line[6:].strip()
-                json_data = json.loads(json_str)
-                
-                # 处理工作流进度信息
-                if json_data.get("event") == "workflow_started":
-                    self.logger.info("工作流开始执行")
-                    
-                # 处理中间结果
-                elif json_data.get("event") == "workflow_step_executing":
-                    step_data = json_data.get("data", {})
-                    self.logger.debug(
-                        "步骤执行中: %s",
-                        step_data.get("node_id")
-                    )
-                
-                # 处理最终结果
-                elif json_data.get("event") == "workflow_finished":
-                    outputs = json_data.get("data", {}).get("outputs", {})
-                    result_text = outputs.get("text", "")
-                    self.logger.info("工作流执行完成")
-                    
-                    return {
-                        "status": "success",
-                        "result": result_text,
-                        "run_id": json_data.get("workflow_run_id")
-                    }
-                    
-                # 显示文本输出
-                if "text" in json_data.get("data", {}):
-                    print(json_data["data"]["text"], end="", flush=True)
-                        
-
-        return {"status": "success", "result": result_text}
+        if response_mode == "blocking":
+            # blocking模式直接获取完整响应
+            try:
+                resp_json = response.json()
+                outputs = resp_json.get("outputs", {})
+                result_text = outputs.get("text", "")
+                run_id = resp_json.get("workflow_run_id")
+                final_outputs = outputs
+                self.logger.info("工作流执行完成(blocking)")
+                return {
+                    "status": "success",
+                    "result": result_text,
+                    "outputs": final_outputs,
+                    "run_id": run_id,
+                    "raw": resp_json
+                }
+            except Exception as e:
+                self.logger.error(f"blocking模式解析失败: {e}")
+                return {"status": "error", "message": str(e)}
+        else:
+            # streaming模式
+            for line in response.iter_lines(decode_unicode=True):
+                if not line:
+                    continue
+                if line.startswith("data: "):
+                    json_str = line[6:].strip()
+                    json_data = json.loads(json_str)
+                    # 处理工作流进度信息
+                    if json_data.get("event") == "workflow_started":
+                        self.logger.info("工作流开始执行")
+                    # 处理中间结果
+                    elif json_data.get("event") == "workflow_step_executing":
+                        step_data = json_data.get("data", {})
+                        self.logger.debug(
+                            "步骤执行中: %s",
+                            step_data.get("node_id")
+                        )
+                    # 处理最终结果
+                    elif json_data.get("event") == "workflow_finished":
+                        outputs = json_data.get("data", {}).get("outputs", {})
+                        result_text = outputs.get("text", "")
+                        run_id = json_data.get("workflow_run_id")
+                        final_outputs = outputs
+                        self.logger.info("工作流执行完成(streaming)")
+                        return {
+                            "status": "success",
+                            "result": result_text,
+                            "outputs": final_outputs,
+                            "run_id": run_id,
+                            "raw": json_data
+                        }
+                    # 显示文本输出
+                    if "text" in json_data.get("data", {}):
+                        print(json_data["data"]["text"], end="", flush=True)
+            return {
+                "status": "success",
+                "result": result_text,
+                "outputs": final_outputs,
+                "run_id": run_id
+            }
 if __name__ == "__main__":
     # 示例用法
-    api_key = "app-*******************"
-    base_url = "http://chat.mydify.com/v1"
+    import json
+    load_config = json.load(open("./dify/config.json","r",encoding="utf-8"))
+    api_key = load_config['api_key']
+    base_url = load_config['base_url']
     dify = Dify(api_key, base_url)
     query='你好'
-    dify.run_chatflow(response_mode="streaming",query=query)
+    
+    print(dify.run_workflow(response_mode='blocking',query='阿克苏哪些水果好吃？'))
