@@ -2,7 +2,14 @@
 name = "DifyTools"
 version = "0.0.1"
 description = "DifyTools: 包含 Dify 和 Ragflow 工具"
-license = "MIT"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "Lingwuxin", email = "your@email.com"}]
+requires-python = ">=3.7"
 dependencies = [
     "requests>=2.25.1"
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent"
 ]
